@@ -1,9 +1,10 @@
 import express from "express";
 import Todo from "../models/todo.js";
+import verifyToken from "../Middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+router.post("/", verifyToken, async (req, res) => {
   try {
     const { text, category, due_date } = req.body;
 
@@ -15,6 +16,7 @@ router.post("/", async (req, res) => {
       text,
       category,
       due_date,
+      userId: req.user.id,
     });
 
     const saved = await newTodo.save();
@@ -24,11 +26,11 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   try {
     const { status, category } = req.query;
 
-    let filter = {};
+    let filter = { userId: req.user.id };
 
     if (status === "pending") {
       filter.completed_at = null;
@@ -49,15 +51,15 @@ router.get("/", async (req, res) => {
   }
 });
 
-
-router.put("/:id/toggle", async (req, res) => {
+router.put("/:id/toggle", verifyToken, async (req, res) => {
   try {
     const todo = await Todo.findById(req.params.id);
-
     if (!todo) {
       return res.status(404).json({ message: "Not found" });
     }
-
+    if (todo.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
     todo.completed_at = todo.completed_at ? null : new Date();
 
     const updated = await todo.save();
@@ -67,13 +69,16 @@ router.put("/:id/toggle", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyToken, async (req, res) => {
   try {
-    const updated = await Todo.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const todo = await Todo.findById(req.params.id);
+
+    if (!todo || todo.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    Object.assign(todo, req.body);
+    const updated = await todo.save();
 
     res.json(updated);
   } catch (error) {
@@ -81,9 +86,16 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyToken, async (req, res) => {
   try {
+    const todo = await Todo.findById(req.params.id);
+    if (!todo) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    if (todo.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
     await Todo.findByIdAndDelete(req.params.id);
     res.json({ message: "Deleted successfully" });
   } catch (error) {
@@ -91,4 +103,4 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-export default router
+export default router;
