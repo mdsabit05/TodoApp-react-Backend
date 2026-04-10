@@ -5,9 +5,6 @@ const todoSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  category: {
-    type: String,
-  },
   due_date: {
     type: Date,
   },
@@ -22,7 +19,12 @@ const todoSchema = new mongoose.Schema({
   category: {
   type: String,
   default: "general"
+},
+userId : {
+  type : mongoose.Schema.Types.ObjectId,
+  required : true
 }
+
 });
 
 export default mongoose.model("Todo", todoSchema);
