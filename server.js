@@ -3,8 +3,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import todoRoutes from "./routes/todorouts.js";
+import userRoutes from "./routes/userRoutes.js"
 
-dotenv.config();
+// dotenv.config();
+dotenv.config({ path: "./.env" });
 
 const app = express();
 
@@ -22,6 +24,7 @@ app.use("/api/todos", todoRoutes);
 app.get("/", (req, res) => {
   res.send("Todo API running");
 });
+app.use("/api/auth", userRoutes);
 
 const PORT = process.env.PORT || 5000;
 
